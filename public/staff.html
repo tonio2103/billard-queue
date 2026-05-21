@@ -335,7 +335,7 @@ function renderBilliards() {
       extra = `
         <div class="b-detail">Table ${b.tableNum}</div>
         <div class="b-timer" id="ns-${b.id}">${nm}:${nss} pour arriver</div>
-        <button class="btn-start" onclick="startSession(${b.id})">▶ Donner les boules</button>
+        <button class="btn-start" onclick="startSession(${b.id})">▶ Lancer la partie</button>
         <button class="btn-end btn-free-note" onclick="endSession(${b.id})">No-show — libérer</button>`;
     } else if (b.status === 'playing' || b.status === 'overtime') {
       statusTxt = b.status === 'overtime' ? '⚠ Dépassement' : '● En jeu';
