@@ -146,6 +146,7 @@ function computeStats() {
     peakHour: peakHour ? `${peakHour}h` : '—',
     perBilliard,
     activeSessions,
+    freeTables: state.billiards.filter(b => b.status === 'free').length,
     queueLength: waitingQueue().length,
     eveningDuration: minsAgo(state.eveningStart),
     hourlyRate: HOURLY_RATE,
@@ -263,7 +264,10 @@ function checkNoShow(queueId, billiardId) {
   io.emit('no_show_client', { tableNum: entry ? entry.tableNum : null });
   io.emit('staff_sound', { type: 'no_show' });
 
-  const next = waitingQueue()[0];
+  const wq = waitingQueue();
+  const freedType = billiard.type;
+  const nextSameType = wq.find(q => (q.preferredType || 'english') === freedType);
+  const next = nextSameType || wq[0];
   if (next) tryAutoAssign(next.id);
   else broadcastState();
 }
@@ -350,7 +354,7 @@ io.on('connection', (socket) => {
 
   socket.on('join_queue', ({ tableNum, preferredType }) => {
     tableNum = parseInt(tableNum);
-    const existing = state.queue.find(q => q.tableNum === tableNum && !['done','no_show','playing'].includes(q.status));
+    const existing = state.queue.find(q => q.tableNum === tableNum && !['done','no_show'].includes(q.status));
     if (existing) { socket.emit('join_result', { success: false, reason: 'already_in' }); return; }
     const entry = { id: uuidv4(), tableNum, preferredType: preferredType || 'english', joinedAt: Date.now(), status: 'waiting', billiardId: null };
     state.queue.push(entry);
@@ -412,9 +416,12 @@ io.on('connection', (socket) => {
     if (entry.billiardId) {
       const b = state.billiards.find(b => b.id === entry.billiardId);
       if (b && b.status === 'waiting_start') {
+        const freedType = b.type;
         b.status = 'free'; b.queueId = null; b.tableNum = null; b.assignedAt = null;
-        const next = waitingQueue()[0];
-        if (next) tryAutoAssign(next.id);
+        const wq = waitingQueue();
+        const nextSameType = wq.find(q => (q.preferredType || 'english') === freedType);
+        const nextQ = nextSameType || wq[0];
+        if (nextQ) tryAutoAssign(nextQ.id);
       }
     }
     entry.status = 'done';

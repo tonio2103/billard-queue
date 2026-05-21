@@ -182,7 +182,11 @@ socket.on('connect', () => document.getElementById('loading').style.display = 'n
 socket.on('disconnect', () => document.getElementById('loading').style.display = 'flex');
 
 socket.on('join_result', ({ success, reason }) => {
-  // géré côté state
+  if (!success) {
+    myStatus = 'idle';
+    render();
+    if (reason === 'already_in') showNotifBar('Vous êtes déjà en file ou en session sur cette table.');
+  }
 });
 
 socket.on('table_type_unavailable', ({ tableNum: t, preferredType, freeEnglish }) => {
@@ -201,9 +205,6 @@ socket.on('state', (state) => {
 
   if (!me) {
     if (!['idle','no_show'].includes(myStatus)) myStatus = 'idle';
-  } else if (me.status === 'playing' && prevStatus === 'idle') {
-    // Nouveau visiteur sur une table déjà en jeu → page d'accueil normale
-    myStatus = 'idle';
   } else {
     myStatus = me.status;
     myPosition = me.position;
@@ -219,6 +220,11 @@ socket.on('state', (state) => {
         myOvertimeMins = b.overtimeMins;
         mySupplement = b.supplement;
         if (b.status === 'waiting_start') myStatus = 'assigned';
+        // Réévalue l'overtime à chaque broadcast pour ne pas écraser le statut
+        if (b.status === 'overtime') {
+          const mustLeave = state.queue.some(q => q.status === 'waiting');
+          myStatus = mustLeave ? 'overtime_warn' : 'overtime_ok';
+        }
       }
     }
 
@@ -226,7 +232,8 @@ socket.on('state', (state) => {
       initAudio(); playSuccess(); vibrate([200, 100, 200]);
       sendNotif("🎱 C'est bientôt votre tour !", `Rendez-vous au ${myBilliardType === 'french' ? 'Billard Français' : 'Billard n°'+myBilliardId}`, 'assigned');
     }
-    if (prevStatus !== 'playing' && myStatus === 'playing') {
+    // prevStatus !== 'idle' évite de jouer le son au simple rechargement de page
+    if (prevStatus !== 'playing' && prevStatus !== 'idle' && myStatus === 'playing') {
       initAudio(); playSuccess(); vibrate([300, 100, 300, 100, 300]);
       sendNotif("✅ C'est parti !", `Session démarrée — ${myBilliardType === 'french' ? 'Billard Français' : 'Billard n°'+myBilliardId}`, 'playing');
     }
