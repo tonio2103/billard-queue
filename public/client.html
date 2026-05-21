@@ -123,6 +123,7 @@ let mySessionSecsLeft = null;
 let myOvertimeMins = 0;
 let mySupplement = 0;
 let preferredType = 'english';
+let myQueueId = localStorage.getItem('queueId_' + tableNum) || null;
 let timerInterval = null;
 let supplementInterval = null;
 let notifPerm = false;
@@ -181,8 +182,11 @@ function selectType(type) {
 socket.on('connect', () => document.getElementById('loading').style.display = 'none');
 socket.on('disconnect', () => document.getElementById('loading').style.display = 'flex');
 
-socket.on('join_result', ({ success, reason }) => {
-  if (!success) {
+socket.on('join_result', ({ success, reason, queueId }) => {
+  if (success) {
+    myQueueId = queueId;
+    localStorage.setItem('queueId_' + tableNum, queueId);
+  } else {
     myStatus = 'idle';
     render();
     if (reason === 'already_in') showNotifBar('Vous êtes déjà en file ou en session sur cette table.');
@@ -200,10 +204,13 @@ socket.on('table_type_unavailable', ({ tableNum: t, preferredType, freeEnglish }
 });
 
 socket.on('state', (state) => {
-  const me = state.queue.find(q => q.tableNum === tableNum);
+  // Lookup par queueId si connu (joueur reconnu), sinon inconnu = idle
+  const me = myQueueId ? state.queue.find(q => q.id === myQueueId) : null;
   const prevStatus = myStatus;
 
   if (!me) {
+    // Session terminée ou inconnu : nettoyer le queueId persisté
+    if (myQueueId) { myQueueId = null; localStorage.removeItem('queueId_' + tableNum); }
     if (!['idle','no_show'].includes(myStatus)) myStatus = 'idle';
   } else {
     myStatus = me.status;
