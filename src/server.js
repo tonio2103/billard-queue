@@ -354,7 +354,7 @@ io.on('connection', (socket) => {
 
   socket.on('join_queue', ({ tableNum, preferredType }) => {
     tableNum = parseInt(tableNum);
-    const existing = state.queue.find(q => q.tableNum === tableNum && !['done','no_show'].includes(q.status));
+    const existing = state.queue.find(q => q.tableNum === tableNum && !['done','no_show','playing'].includes(q.status));
     if (existing) { socket.emit('join_result', { success: false, reason: 'already_in' }); return; }
     const entry = { id: uuidv4(), tableNum, preferredType: preferredType || 'english', joinedAt: Date.now(), status: 'waiting', billiardId: null };
     state.queue.push(entry);
