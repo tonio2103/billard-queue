@@ -219,7 +219,7 @@ socket.on('state', (state) => {
     myBilliardId = me.billiardId;
 
     if (['assigned','playing'].includes(me.status)) {
-      const b = state.billiards.find(b => b.tableNum === tableNum);
+      const b = state.billiards.find(b => b.id === me.billiardId);
       if (b) {
         myBilliardId = b.id;
         myBilliardType = b.type;
