@@ -300,14 +300,16 @@ function renderQueue() {
       <div class="pos-badge">${q.status === 'assigned' ? '→' : (q.position || i+1)}</div>
       <div class="q-info">
         <div class="q-name">
-          ${q.isManual ? (q.label || 'Client comptoir') : `Table ${q.tableNum}`}
+          ${q.isManual
+            ? `<span style="font-size:16px;font-weight:700">${q.label || 'Client comptoir'}</span>
+               <span style="font-size:9px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.3);padding:2px 5px;border-radius:4px;margin-left:5px">manuel</span>`
+            : `<span style="font-size:22px;font-weight:700;color:#ff6b35;letter-spacing:-.01em">Table ${q.tableNum}</span>`}
           <span class="type-pill ${q.preferredType}">${q.preferredType === 'french' ? 'FR' : 'EN'}</span>
-          ${q.isManual ? '<span style="font-size:9px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.3);padding:2px 5px;border-radius:4px;margin-left:4px">manuel</span>' : ''}
         </div>
         <div class="q-detail">${
           q.status === 'assigned' ? `🔔 Billard ${q.billiardId} — en attente démarrage` :
           q.waitMins < 1 ? 'À l\'instant' :
-          `${q.waitMins} min · ≈${q.estimatedWaitMins} min`
+          `${q.waitMins} min en attente · ≈${q.estimatedWaitMins} min restantes`
         }</div>
       </div>
       <button class="btn-xs btn-ghost" onclick="removeQ('${q.id}')">✕</button>
