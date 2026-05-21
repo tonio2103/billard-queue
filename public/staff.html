@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0d10">
+<title>Staff — Billard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0d0d10;color:#f0f0f5;font-family:'Space Grotesk',sans-serif;min-height:100vh}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:#0d0d10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px;z-index:200}
+.login-logo{width:80px;height:80px;object-fit:contain;border-radius:50%;opacity:.9;margin-bottom:4px}
+.login-title{font-size:20px;font-weight:700;text-align:center}
+.login-sub{font-size:13px;color:rgba(255,255,255,.3);text-align:center}
+.login-input{width:100%;max-width:320px;background:#16161c;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px 20px;color:#f0f0f5;font-family:'Space Grotesk',sans-serif;font-size:18px;text-align:center;letter-spacing:.15em;outline:none;transition:border .2s}
+.login-input:focus{border-color:rgba(255,107,53,.4)}
+.login-input.error{border-color:rgba(231,76,60,.5);animation:shake .3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.login-btn{width:100%;max-width:320px;padding:16px;background:#ff6b35;color:white;border:none;border-radius:14px;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s}
+.login-btn:active{transform:scale(.97)}
+.login-error{font-size:12px;color:#e74c3c;display:none}
+.login-error.show{display:block}
+
+.header{background:#16161c;border-bottom:1px solid rgba(255,255,255,.07);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header-title{font-size:15px;font-weight:700}
+.header-sub{font-size:10px;color:rgba(255,255,255,.28);margin-top:2px}
+.live-dot{width:7px;height:7px;background:#2ecc71;border-radius:50%;animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* TABS */
+.tabs{display:flex;background:#16161c;border-bottom:1px solid rgba(255,255,255,.07)}
+.tab{flex:1;padding:12px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:none;background:transparent;color:rgba(255,255,255,.3);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;font-family:'Space Grotesk',sans-serif}
+.tab.active{color:#ff6b35;border-bottom-color:#ff6b35}
+
+main{padding:12px 13px 48px;display:flex;flex-direction:column;gap:18px}
+
+.sec-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:8px}
+
+.alert-bar{width:100%;border-radius:11px;padding:11px 14px;font-size:13px;font-weight:600;text-align:center;display:none;margin-bottom:4px}
+.alert-bar.show{display:block}
+.alert-bar.overtime{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.28);color:#e74c3c;animation:pr 1.5s ease-in-out infinite}
+@keyframes pr{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,.18)}50%{box-shadow:0 0 0 8px rgba(231,76,60,0)}}
+
+/* FILE */
+.queue-list{display:flex;flex-direction:column;gap:7px}
+.q-item{background:#16161c;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;transition:all .2s}
+.q-item.assigned{background:rgba(243,156,18,.05);border-color:rgba(243,156,18,.25)}
+.q-item.playing{background:rgba(46,204,113,.04);border-color:rgba(46,204,113,.13)}
+.pos-badge{width:30px;height:30px;border-radius:50%;background:rgba(255,107,53,.1);color:#ff6b35;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.q-info{flex:1;min-width:0}
+.q-name{font-size:14px;font-weight:600}
+.q-detail{font-size:10px;color:rgba(255,255,255,.28);margin-top:1px}
+.type-pill{display:inline-block;font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:5px;background:rgba(77,142,245,.12);color:#4d8ef5}
+.type-pill.english{background:rgba(255,107,53,.1);color:#ff6b35}
+.btn-xs{padding:6px 10px;border-radius:7px;font-size:10px;font-weight:700;font-family:'Space Grotesk',sans-serif;border:none;cursor:pointer;transition:all .15s}
+.btn-ghost{background:rgba(255,255,255,.04);color:rgba(255,255,255,.28)}
+.btn-ghost:hover{background:rgba(231,76,60,.1);color:#e74c3c}
+
+/* BILLARDS */
+.billiard-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.b-card{border-radius:13px;padding:13px;border:1px solid rgba(255,255,255,.07);background:#16161c;transition:all .2s}
+.b-card.free{background:rgba(46,204,113,.04);border-color:rgba(46,204,113,.15)}
+.b-card.waiting_start{background:rgba(243,156,18,.05);border-color:rgba(243,156,18,.25)}
+.b-card.overtime{background:rgba(231,76,60,.06);border-color:rgba(231,76,60,.28);animation:pr 1.5s ease-in-out infinite}
+.b-card.french-table{border-left:3px solid rgba(77,142,245,.5)}
+
+.b-num{font-size:15px;font-weight:700}
+.b-status{font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-top:2px}
+.b-card.free .b-status{color:#2ecc71}
+.b-card.waiting_start .b-status{color:#f39c12}
+.b-card.playing .b-status{color:rgba(255,255,255,.28)}
+.b-card.overtime .b-status{color:#e74c3c}
+.b-detail{font-size:10px;color:rgba(255,255,255,.22);margin-top:3px}
+.b-timer{font-size:12px;font-weight:600;color:#ff6b35;margin-top:3px}
+.b-timer.critical{color:#e74c3c}
+.b-supplement{font-size:11px;color:#f39c12;margin-top:2px;font-weight:600}
+
+.btn-start{width:100%;margin-top:9px;padding:9px;background:#ff6b35;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;font-family:'Space Grotesk',sans-serif;cursor:pointer}
+.btn-end{width:100%;margin-top:6px;padding:7px;background:rgba(231,76,60,.08);color:#e74c3c;border:1px solid rgba(231,76,60,.18);border-radius:7px;font-size:10px;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer}
+.btn-free-note{background:rgba(255,107,53,.08);color:rgba(255,107,53,.6);border-color:rgba(255,107,53,.18)}
+
+.empty-state{text-align:center;padding:24px;color:rgba(255,255,255,.16);font-size:13px}
+.empty-state span{display:block;font-size:28px;margin-bottom:6px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-card{background:#16161c;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 12px;text-align:center}
+.stat-val{font-size:26px;font-weight:700;color:#ff6b35;line-height:1}
+.stat-val.green{color:#2ecc71}
+.stat-val.yellow{color:#f39c12}
+.stat-val.blue{color:#4d8ef5}
+.stat-label{font-size:10px;color:rgba(255,255,255,.25);margin-top:4px;letter-spacing:.04em}
+
+.billiard-stats{display:flex;flex-direction:column;gap:6px}
+.bs-row{display:flex;align-items:center;gap:8px;background:#16161c;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 12px}
+.bs-name{font-size:12px;font-weight:600;flex:1}
+.bs-sessions{font-size:12px;color:#ff6b35;font-weight:700;min-width:20px;text-align:center}
+.bs-avg{font-size:10px;color:rgba(255,255,255,.25)}
+.bs-bar-wrap{width:60px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.bs-bar{height:100%;border-radius:2px;background:#ff6b35;transition:width .5s}
+
+.btn-export{width:100%;padding:12px;background:rgba(77,142,245,.1);color:#4d8ef5;border:1px solid rgba(77,142,245,.2);border-radius:11px;font-size:13px;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;transition:all .15s}
+.btn-export:hover{background:rgba(77,142,245,.18)}
+.btn-reset{width:100%;padding:10px;background:rgba(231,76,60,.07);color:rgba(231,76,60,.5);border:1px solid rgba(231,76,60,.12);border-radius:11px;font-size:12px;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:9px 18px;border-radius:9px;font-size:12px;font-weight:600;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;background:#2ecc71;color:white}
+.toast.show{opacity:1}
+
+#loading{position:fixed;inset:0;background:#0d0d10;display:flex;align-items:center;justify-content:center;z-index:100}
+.spinner{width:28px;height:28px;border:2px solid rgba(255,107,53,.18);border-top-color:#ff6b35;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ÉCRAN LOGIN -->
+<div id="login-screen">
+  <img src="/indiana.png" alt="Indiana" class="login-logo">
+  <div class="login-title">Accès Staff</div>
+  <div class="login-sub">Entrez le mot de passe pour continuer</div>
+  <input class="login-input" id="login-input" type="password" placeholder="••••••••••"
+    onkeydown="if(event.key==='Enter') checkPassword()">
+  <button class="login-btn" onclick="checkPassword()">Entrer</button>
+  <div class="login-error" id="login-error">Mot de passe incorrect</div>
+</div>
+
+<div id="loading"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <div>
+    <div class="header-title">🎱 Staff</div>
+    <div class="header-sub" id="header-sub">Connexion...</div>
+  </div>
+  <div class="live-dot"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('live')">🎱 Live</button>
+  <button class="tab" onclick="showTab('stats')">📊 Soirée</button>
+</div>
+
+<main>
+  <div class="alert-bar overtime" id="alert-bar"></div>
+
+  <!-- ONGLET LIVE -->
+  <div id="tab-live">
+    <section style="margin-bottom:18px">
+      <div class="sec-label">File d'attente</div>
+      <div class="queue-list" id="queue-list"></div>
+      <!-- AJOUT MANUEL -->
+      <div style="margin-top:10px">
+        <div id="manual-form" style="display:none;background:#1a1a24;border:1px solid rgba(255,107,53,.2);border-radius:13px;padding:14px;margin-top:8px">
+          <div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:10px">Ajouter un client sans téléphone</div>
+          <input id="manual-label" type="text" placeholder="Ex: Monsieur au chapeau, Groupe table 4..." maxlength="40"
+            style="width:100%;background:#0d0d10;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:#f0f0f5;font-family:'Space Grotesk',sans-serif;font-size:13px;margin-bottom:10px;outline:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <button class="btn-type-manual selected" id="manual-english" onclick="selectManualType('english')"
+              style="padding:10px;border-radius:9px;border:1px solid rgba(255,107,53,.3);background:rgba(255,107,53,.1);color:#ff6b35;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+              🎱 Anglaise
+            </button>
+            <button class="btn-type-manual" id="manual-french" onclick="selectManualType('french')"
+              style="padding:10px;border-radius:9px;border:1px solid rgba(255,255,255,.08);background:#16161c;color:rgba(255,255,255,.4);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+              🔵 Française
+            </button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button onclick="confirmManualAdd()" style="padding:10px;background:#ff6b35;color:white;border:none;border-radius:9px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Ajouter</button>
+            <button onclick="toggleManualForm()" style="padding:10px;background:rgba(255,255,255,.05);color:rgba(255,255,255,.3);border:none;border-radius:9px;font-family:'Space Grotesk',sans-serif;font-size:13px;cursor:pointer">Annuler</button>
+          </div>
+        </div>
+        <button onclick="toggleManualForm()" id="btn-manual-toggle"
+          style="width:100%;margin-top:8px;padding:11px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.35);border:1px dashed rgba(255,255,255,.1);border-radius:11px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer">
+          + Ajouter un client sans téléphone
+        </button>
+      </div>
+    </section>
+    <section>
+      <div class="sec-label">Tables billard</div>
+      <div class="billiard-grid" id="billiard-grid"></div>
+    </section>
+  </div>
+
+  <!-- ONGLET STATS -->
+  <div id="tab-stats" style="display:none">
+    <section style="margin-bottom:18px">
+      <div class="sec-label">Résumé de la soirée</div>
+      <div class="stats-grid" id="stats-grid"></div>
+    </section>
+    <section style="margin-bottom:18px">
+      <div class="sec-label">Par table de billard</div>
+      <div class="billiard-stats" id="billiard-stats"></div>
+    </section>
+    <button class="btn-export" onclick="exportCSV()">⬇ Exporter CSV</button>
+    <div style="height:8px"></div>
+    <button class="btn-reset" onclick="resetEvening()">🔄 Réinitialiser la soirée</button>
+  </div>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+const PASSWORD = 'dianapool';
+
+function checkPassword() {
+  const val = document.getElementById('login-input').value;
+  if (val === PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    sessionStorage.setItem('staff_auth', '1');
+  } else {
+    const input = document.getElementById('login-input');
+    const err = document.getElementById('login-error');
+    input.classList.add('error');
+    err.classList.add('show');
+    input.value = '';
+    setTimeout(() => input.classList.remove('error'), 400);
+  }
+}
+
+// Si déjà authentifié dans la session, passer directement
+if (sessionStorage.getItem('staff_auth') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+}
+
+const socket = io();
+let S = { queue:[], billiards:[], stats:{} };
+const timers = {};
+let audioCtx = null;
+let soundEnabled = false;
+
+// ─── AUDIO STAFF ─────────────────────────────────────────────────────────────
+document.addEventListener('click', () => {
+  if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); soundEnabled = true; }
+}, { once: true });
+
+function staffBeep(freq, dur, delay = 0) {
+  if (!audioCtx || !soundEnabled) return;
+  setTimeout(() => {
+    try {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = freq; o.type = 'sine';
+      g.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      o.start(); o.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  }, delay);
+}
+
+socket.on('staff_sound', ({ type }) => {
+  if (type === 'new_entry') { staffBeep(880, 0.1); staffBeep(1100, 0.15, 150); }
+  else if (type === 'overtime') { staffBeep(440, 0.2); staffBeep(440, 0.2, 300); staffBeep(440, 0.3, 600); }
+  else if (type === 'no_show') { staffBeep(300, 0.3); }
+});
+
+// ─── SOCKET ──────────────────────────────────────────────────────────────────
+socket.on('connect', () => document.getElementById('loading').style.display = 'none');
+socket.on('disconnect', () => document.getElementById('loading').style.display = 'flex');
+
+socket.on('state', (state) => {
+  S = state;
+  const st = state.stats;
+  document.getElementById('header-sub').textContent =
+    `${st.queueLength} en attente · ${st.freeTables} libre(s) · ${st.activeSessions} en jeu`;
+  renderLive();
+  renderStats();
+});
+
+socket.on('overtime_alert', ({ billiardId, tableNum, mustLeave }) => {
+  const bar = document.getElementById('alert-bar');
+  bar.textContent = mustLeave
+    ? `⏰ Billard ${billiardId} (Table ${tableNum}) — 1h écoulée, des clients attendent !`
+    : `⏰ Billard ${billiardId} (Table ${tableNum}) — 1h écoulée, supplément si continuation`;
+  bar.classList.add('show');
+});
+socket.on('overtime_urgent', ({ billiardId, tableNum }) => {
+  toast(`🚨 Billard ${billiardId} Table ${tableNum} — toujours pas libéré !`, '#e74c3c', 5000);
+});
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['live','stats'][i] === tab));
+  document.getElementById('tab-live').style.display = tab === 'live' ? 'block' : 'none';
+  document.getElementById('tab-stats').style.display = tab === 'stats' ? 'block' : 'none';
+}
+
+// ─── LIVE ─────────────────────────────────────────────────────────────────────
+function renderLive() { renderQueue(); renderBilliards(); }
+
+function renderQueue() {
+  const el = document.getElementById('queue-list');
+  const items = S.queue.filter(q => q.status !== 'playing');
+  if (!items.length) { el.innerHTML = '<div class="empty-state"><span>☕</span>File vide</div>'; return; }
+  el.innerHTML = items.map((q, i) => `
+    <div class="q-item ${q.status}">
+      <div class="pos-badge">${q.status === 'assigned' ? '→' : (q.position || i+1)}</div>
+      <div class="q-info">
+        <div class="q-name">
+          ${q.isManual ? (q.label || 'Client comptoir') : `Table ${q.tableNum}`}
+          <span class="type-pill ${q.preferredType}">${q.preferredType === 'french' ? 'FR' : 'EN'}</span>
+          ${q.isManual ? '<span style="font-size:9px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.3);padding:2px 5px;border-radius:4px;margin-left:4px">manuel</span>' : ''}
+        </div>
+        <div class="q-detail">${
+          q.status === 'assigned' ? `🔔 Billard ${q.billiardId} — en attente démarrage` :
+          q.waitMins < 1 ? 'À l\'instant' :
+          `${q.waitMins} min · ≈${q.estimatedWaitMins} min`
+        }</div>
+      </div>
+      <button class="btn-xs btn-ghost" onclick="removeQ('${q.id}')">✕</button>
+    </div>`).join('');
+}
+
+function removeQ(id) { socket.emit('remove_from_queue', { queueId: id }); toast('Retiré de la file'); }
+
+function renderBilliards() {
+  const el = document.getElementById('billiard-grid');
+  Object.values(timers).forEach(t => clearInterval(t));
+
+  el.innerHTML = S.billiards.map(b => {
+    const isFrench = b.type === 'french';
+    let statusTxt = '', extra = '';
+
+    if (b.status === 'free') {
+      statusTxt = '● Libre';
+    } else if (b.status === 'waiting_start') {
+      statusTxt = '◐ Attente démarrage';
+      const ns = b.noShowSecsLeft;
+      const nm = Math.floor(ns/60), nss = String(ns%60).padStart(2,'0');
+      extra = `
+        <div class="b-detail">Table ${b.tableNum}</div>
+        <div class="b-timer" id="ns-${b.id}">${nm}:${nss} pour arriver</div>
+        <button class="btn-start" onclick="startSession(${b.id})">▶ Donner les boules</button>
+        <button class="btn-end btn-free-note" onclick="endSession(${b.id})">No-show — libérer</button>`;
+    } else if (b.status === 'playing' || b.status === 'overtime') {
+      statusTxt = b.status === 'overtime' ? '⚠ Dépassement' : '● En jeu';
+      const sl = b.sessionSecsLeft;
+      const sm = Math.floor(sl/60), ss = String(sl%60).padStart(2,'0');
+      const sup = b.supplement;
+      extra = `
+        <div class="b-detail">Table ${b.tableNum} · ${b.sessionMins} min</div>
+        ${b.status === 'playing'
+          ? `<div class="b-timer ${sl < 600 ? 'critical' : ''}" id="st-${b.id}">${sm}:${ss} restantes</div>`
+          : `<div class="b-timer critical">TEMPS DÉPASSÉ</div>`}
+        ${sup > 0 ? `<div class="b-supplement">+${sup.toFixed(2)}€ supplément</div>` : ''}
+        <button class="btn-end" onclick="endSession(${b.id})">Libérer la table</button>`;
+    }
+
+    return `<div class="b-card ${b.status} ${isFrench ? 'french-table' : ''}" id="bc-${b.id}">
+      <div class="b-num">${b.label}</div>
+      <div class="b-status">${statusTxt}</div>
+      ${extra}
+    </div>`;
+  }).join('');
+
+  // Timers locaux
+  S.billiards.forEach(b => {
+    if (b.status === 'playing' && b.sessionSecsLeft > 0) {
+      let s = b.sessionSecsLeft;
+      timers['s'+b.id] = setInterval(() => {
+        s--; const el = document.getElementById(`st-${b.id}`); if (!el) return clearInterval(timers['s'+b.id]);
+        const m = Math.floor(Math.max(0,s)/60), ss = String(Math.max(0,s)%60).padStart(2,'0');
+        el.textContent = `${m}:${ss} restantes`;
+        if (s < 600) el.classList.add('critical');
+        if (s <= 0) clearInterval(timers['s'+b.id]);
+      }, 1000);
+    }
+    if (b.status === 'waiting_start' && b.noShowSecsLeft > 0) {
+      let s = b.noShowSecsLeft;
+      timers['ns'+b.id] = setInterval(() => {
+        s--; const el = document.getElementById(`ns-${b.id}`); if (!el) return clearInterval(timers['ns'+b.id]);
+        const m = Math.floor(Math.max(0,s)/60), ss = String(Math.max(0,s)%60).padStart(2,'0');
+        el.textContent = `${m}:${ss} pour arriver`;
+        if (s <= 0) clearInterval(timers['ns'+b.id]);
+      }, 1000);
+    }
+  });
+}
+
+function startSession(id) { socket.emit('start_session', { billiardId: id }); toast(`▶ Billard ${id} démarré`); document.getElementById('alert-bar').classList.remove('show'); }
+function endSession(id) { socket.emit('end_session', { billiardId: id }); toast(`✓ Billard ${id} libéré`); document.getElementById('alert-bar').classList.remove('show'); }
+
+// ─── STATS ───────────────────────────────────────────────────────────────────
+function renderStats() {
+  const st = S.stats;
+  if (!st || !st.totalSessions) {
+    document.getElementById('stats-grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span>📊</span>Pas encore de données</div>';
+    document.getElementById('billiard-stats').innerHTML = '';
+    return;
+  }
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${st.totalSessions}</div><div class="stat-label">Parties jouées</div></div>
+    <div class="stat-card"><div class="stat-val green">${st.avgWaitMins} min</div><div class="stat-label">Attente moyenne</div></div>
+    <div class="stat-card"><div class="stat-val">${st.avgSessionMins} min</div><div class="stat-label">Durée moyenne</div></div>
+    <div class="stat-card"><div class="stat-val yellow">${st.totalNoShows}</div><div class="stat-label">No-shows</div></div>
+    <div class="stat-card"><div class="stat-val green">${st.totalRevenue.toFixed(0)}€</div><div class="stat-label">CA estimé soirée</div></div>
+    <div class="stat-card"><div class="stat-val yellow">+${st.totalSupplements.toFixed(2)}€</div><div class="stat-label">Suppléments</div></div>
+    <div class="stat-card" style="grid-column:1/-1"><div class="stat-val blue">${st.peakHour}</div><div class="stat-label">Heure de pointe</div></div>
+  `;
+
+  const maxSessions = Math.max(...st.perBilliard.map(b => b.sessions), 1);
+  document.getElementById('billiard-stats').innerHTML = st.perBilliard
+    .sort((a,b) => b.sessions - a.sessions)
+    .map(b => `
+      <div class="bs-row">
+        <div class="bs-name">${b.label}${b.type === 'french' ? ' 🔵' : ''}</div>
+        <div class="bs-bar-wrap"><div class="bs-bar" style="width:${(b.sessions/maxSessions)*100}%"></div></div>
+        <div class="bs-sessions">${b.sessions}</div>
+        <div class="bs-avg">${b.avgMins ? b.avgMins+'min' : '—'}</div>
+      </div>`).join('');
+}
+
+function exportCSV() { window.open('/export-csv', '_blank'); toast('Export en cours...', '#4d8ef5'); }
+
+// ─── AJOUT MANUEL ─────────────────────────────────────────────────────────────
+let manualType = 'english';
+
+function toggleManualForm() {
+  const form = document.getElementById('manual-form');
+  const btn = document.getElementById('btn-manual-toggle');
+  const visible = form.style.display !== 'none';
+  form.style.display = visible ? 'none' : 'block';
+  btn.style.display = visible ? 'block' : 'none';
+  if (!visible) document.getElementById('manual-label').focus();
+}
+
+function selectManualType(type) {
+  manualType = type;
+  const engBtn = document.getElementById('manual-english');
+  const frBtn = document.getElementById('manual-french');
+  engBtn.style.background = type === 'english' ? 'rgba(255,107,53,.1)' : '#16161c';
+  engBtn.style.borderColor = type === 'english' ? 'rgba(255,107,53,.3)' : 'rgba(255,255,255,.08)';
+  engBtn.style.color = type === 'english' ? '#ff6b35' : 'rgba(255,255,255,.4)';
+  frBtn.style.background = type === 'french' ? 'rgba(77,142,245,.1)' : '#16161c';
+  frBtn.style.borderColor = type === 'french' ? 'rgba(77,142,245,.3)' : 'rgba(255,255,255,.08)';
+  frBtn.style.color = type === 'french' ? '#4d8ef5' : 'rgba(255,255,255,.4)';
+}
+
+function confirmManualAdd() {
+  const label = document.getElementById('manual-label').value.trim() || 'Client comptoir';
+  socket.emit('manual_add', { preferredType: manualType, label });
+  document.getElementById('manual-label').value = '';
+  toggleManualForm();
+  toast(`✓ "${label}" ajouté en file`);
+}
+
+function resetEvening() {
+  if (!confirm('Réinitialiser toutes les stats de la soirée ?')) return;
+  socket.emit('reset_evening');
+  toast('Soirée réinitialisée', '#f39c12');
+}
+
+function toast(msg, bg = '#2ecc71', dur = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.background = bg;
+  el.classList.add('show'); setTimeout(() => el.classList.remove('show'), dur);
+}
+</script>
+</body>
+</html>

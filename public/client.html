@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0d0d10">
+<title>Billard — File d'attente</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:#0d0d10;color:#f0f0f5;font-family:'Space Grotesk',sans-serif}
+body{display:flex;flex-direction:column;align-items:center;padding:24px 18px 48px;gap:14px;min-height:100vh}
+
+.logo-indiana{display:flex;align-items:center;justify-content:center;margin-bottom:2px}
+.logo-indiana img{width:80px;height:80px;object-fit:contain;border-radius:50%;opacity:.92}
+
+.table-badge{background:#16161c;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px 36px;text-align:center;width:100%}
+.table-num{font-size:60px;font-weight:700;color:#ff6b35;line-height:1}
+.table-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22);margin-top:4px}
+
+/* CHOIX TYPE */
+.type-choice{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type-btn{padding:14px 10px;border-radius:13px;border:1px solid rgba(255,255,255,.08);background:#16161c;color:rgba(255,255,255,.5);font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center}
+.type-btn.selected{background:rgba(255,107,53,.1);border-color:rgba(255,107,53,.4);color:#ff6b35}
+.type-btn .t-icon{display:block;font-size:22px;margin-bottom:4px}
+.type-btn .t-sub{font-size:10px;color:rgba(255,255,255,.25);margin-top:2px}
+.type-btn.selected .t-sub{color:rgba(255,107,53,.5)}
+
+.status-card{width:100%;border-radius:18px;padding:26px 18px;text-align:center;transition:all .4s ease;border:1px solid rgba(255,255,255,.07);background:#16161c}
+.status-card.soon{background:rgba(243,156,18,.06);border-color:rgba(243,156,18,.28)}
+.status-card.your-turn{background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.38);animation:pg 2s ease-in-out infinite}
+.status-card.overtime-warn{background:rgba(231,76,60,.07);border-color:rgba(231,76,60,.32);animation:pr 1.5s ease-in-out infinite}
+.status-card.overtime-ok{background:rgba(77,142,245,.05);border-color:rgba(77,142,245,.25)}
+.status-card.no-show{background:rgba(231,76,60,.06);border-color:rgba(231,76,60,.25)}
+
+@keyframes pg{0%,100%{box-shadow:0 0 0 0 rgba(46,204,113,.22)}50%{box-shadow:0 0 0 14px rgba(46,204,113,0)}}
+@keyframes pr{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,.22)}50%{box-shadow:0 0 0 12px rgba(231,76,60,0)}}
+
+.s-icon{font-size:42px;display:block;margin-bottom:10px}
+.s-title{font-size:21px;font-weight:700;margin-bottom:6px;line-height:1.2}
+.s-sub{font-size:13px;color:rgba(255,255,255,.38);line-height:1.6}
+.pos-num{font-size:68px;font-weight:700;color:#ff6b35;line-height:1;margin:8px 0 2px}
+.pos-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.22)}
+.est-wait{font-size:12px;color:rgba(255,255,255,.25);margin-top:6px}
+.billiard-tag{display:inline-block;margin-top:12px;background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);border-radius:11px;padding:9px 20px;font-size:18px;font-weight:700;color:#2ecc71}
+.billiard-tag.french{background:rgba(77,142,245,.1);border-color:rgba(77,142,245,.3);color:#4d8ef5}
+
+.timer-wrap{margin:14px 0 2px}
+.timer-track{background:rgba(255,255,255,.06);border-radius:5px;height:5px;overflow:hidden}
+.timer-fill{height:100%;border-radius:5px;transition:width 1s linear;background:#ff6b35}
+.timer-label{font-size:11px;color:rgba(255,255,255,.22);margin-top:5px}
+
+.supplement-box{margin-top:12px;background:rgba(243,156,18,.08);border:1px solid rgba(243,156,18,.25);border-radius:10px;padding:10px 14px}
+.supplement-amount{font-size:22px;font-weight:700;color:#f39c12}
+.supplement-label{font-size:11px;color:rgba(255,255,255,.3);margin-top:2px}
+
+.btn-main{width:100%;padding:19px;font-size:16px;font-weight:700;font-family:'Space Grotesk',sans-serif;border:none;border-radius:15px;cursor:pointer;transition:all .15s;letter-spacing:.02em}
+.btn-main.primary{background:#ff6b35;color:white}
+.btn-main.primary:active{transform:scale(.97)}
+.btn-main.danger{background:rgba(231,76,60,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.22)}
+.btn-main.inactive{background:#16161c;color:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.05);cursor:default}
+
+.hint{font-size:11px;color:rgba(255,255,255,.18);text-align:center;line-height:1.5}
+.notif-bar{width:100%;background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);border-radius:11px;padding:11px 14px;font-size:12px;color:#ff6b35;text-align:center;display:none}
+.notif-bar.show{display:block}
+
+#loading{position:fixed;inset:0;background:#0d0d10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:100}
+.spinner{width:28px;height:28px;border:2px solid rgba(255,107,53,.18);border-top-color:#ff6b35;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div></div>
+
+<div class="logo-indiana">
+  <img src="/indiana.png" alt="Indiana Café">
+</div>
+
+<div class="table-badge">
+  <div class="table-num" id="tnum">—</div>
+  <div class="table-label">Votre table</div>
+</div>
+
+<div class="notif-bar" id="notif-bar"></div>
+
+<!-- Choix type de billard (visible seulement avant de rejoindre) -->
+<div class="type-choice" id="type-choice">
+  <button class="type-btn selected" id="btn-english" onclick="selectType('english')">
+    <span class="t-icon">🎱</span>
+    Anglaise
+    <div class="t-sub">×10 disponibles</div>
+  </button>
+  <button class="type-btn" id="btn-french" onclick="selectType('french')">
+    <span class="t-icon">🔵</span>
+    Française
+    <div class="t-sub">×1 disponible</div>
+  </button>
+</div>
+
+<div class="status-card" id="card">
+  <span class="s-icon" id="s-icon">🎱</span>
+  <div class="s-title" id="s-title">Chargement...</div>
+  <div class="s-sub" id="s-sub"></div>
+</div>
+
+<button class="btn-main inactive" id="btn" disabled>Chargement...</button>
+<div class="hint" id="hint"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const pathParts = window.location.pathname.split('/');
+const tableNum = parseInt(pathParts[pathParts.length - 1]) || 1;
+document.getElementById('tnum').textContent = tableNum;
+document.title = `Table ${tableNum} — Billard`;
+
+const socket = io();
+let myStatus = 'idle';
+let myPosition = null;
+let myEstWait = null;
+let myBilliardId = null;
+let myBilliardType = null;
+let mySessionSecsLeft = null;
+let myOvertimeMins = 0;
+let mySupplement = 0;
+let preferredType = 'english';
+let timerInterval = null;
+let supplementInterval = null;
+let notifPerm = false;
+let audioCtx = null;
+
+// ─── SON & VIBRATION ─────────────────────────────────────────────────────────
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+function playBeep(freq, duration, type = 'sine') {
+  try {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.start(); osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {}
+}
+
+function playSuccess() {
+  playBeep(523, 0.15); setTimeout(() => playBeep(659, 0.15), 150); setTimeout(() => playBeep(784, 0.3), 300);
+}
+
+function playAlert() {
+  playBeep(440, 0.2); setTimeout(() => playBeep(440, 0.2), 250); setTimeout(() => playBeep(440, 0.4), 500);
+}
+
+function vibrate(pattern) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// ─── NOTIFS ──────────────────────────────────────────────────────────────────
+function requestNotifPerm() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { notifPerm = true; return; }
+  if (Notification.permission !== 'denied') Notification.requestPermission().then(p => { notifPerm = p === 'granted'; });
+}
+
+function sendNotif(title, body, tag) {
+  if (!notifPerm) return;
+  try { new Notification(title, { body, tag, renotify: true }); } catch(e) {}
+}
+
+function selectType(type) {
+  preferredType = type;
+  document.getElementById('btn-english').classList.toggle('selected', type === 'english');
+  document.getElementById('btn-french').classList.toggle('selected', type === 'french');
+}
+
+// ─── SOCKET ──────────────────────────────────────────────────────────────────
+socket.on('connect', () => document.getElementById('loading').style.display = 'none');
+socket.on('disconnect', () => document.getElementById('loading').style.display = 'flex');
+
+socket.on('join_result', ({ success, reason }) => {
+  // géré côté state
+});
+
+socket.on('table_type_unavailable', ({ tableNum: t, preferredType, freeEnglish }) => {
+  if (t !== tableNum) return;
+  // Remettre en waiting visuellement — déjà en file, juste pas assigné
+  if (preferredType === 'french' && freeEnglish > 0) {
+    showNotifBar(`Billard Français complet. ${freeEnglish} billard(s) anglais disponible(s) — changez votre choix si vous voulez jouer maintenant.`);
+  } else if (preferredType === 'french') {
+    showNotifBar('Billard Français complet. Vous êtes en liste d\'attente — vous serez averti dès qu\'il se libère.');
+  }
+});
+
+socket.on('state', (state) => {
+  const me = state.queue.find(q => q.tableNum === tableNum);
+  const prevStatus = myStatus;
+
+  if (!me) {
+    if (!['idle','no_show'].includes(myStatus)) myStatus = 'idle';
+  } else if (me.status === 'playing' && prevStatus === 'idle') {
+    // Nouveau visiteur sur une table déjà en jeu → page d'accueil normale
+    myStatus = 'idle';
+  } else {
+    myStatus = me.status;
+    myPosition = me.position;
+    myEstWait = me.estimatedWaitMins;
+    myBilliardId = me.billiardId;
+
+    if (['assigned','playing'].includes(me.status)) {
+      const b = state.billiards.find(b => b.tableNum === tableNum);
+      if (b) {
+        myBilliardId = b.id;
+        myBilliardType = b.type;
+        mySessionSecsLeft = b.sessionSecsLeft;
+        myOvertimeMins = b.overtimeMins;
+        mySupplement = b.supplement;
+        if (b.status === 'waiting_start') myStatus = 'assigned';
+      }
+    }
+
+    if (prevStatus === 'waiting' && myStatus === 'assigned') {
+      initAudio(); playSuccess(); vibrate([200, 100, 200]);
+      sendNotif("🎱 C'est bientôt votre tour !", `Rendez-vous au ${myBilliardType === 'french' ? 'Billard Français' : 'Billard n°'+myBilliardId}`, 'assigned');
+    }
+    if (prevStatus !== 'playing' && myStatus === 'playing') {
+      initAudio(); playSuccess(); vibrate([300, 100, 300, 100, 300]);
+      sendNotif("✅ C'est parti !", `Session démarrée — ${myBilliardType === 'french' ? 'Billard Français' : 'Billard n°'+myBilliardId}`, 'playing');
+    }
+  }
+  render();
+
+  // Mettre à jour les compteurs de dispo en temps réel
+  if (state.availability) {
+    const a = state.availability;
+    const engSub = document.querySelector('#btn-english .t-sub');
+    const frSub = document.querySelector('#btn-french .t-sub');
+    if (engSub) {
+      engSub.textContent = a.freeEnglish === 0 ? 'Complet' : `×${a.freeEnglish} libre(s)`;
+      engSub.style.color = a.freeEnglish === 0 ? 'rgba(231,76,60,.5)' : '';
+    }
+    if (frSub) {
+      frSub.textContent = a.freeFrench === 0 ? 'Complet' : '×1 libre';
+      frSub.style.color = a.freeFrench === 0 ? 'rgba(231,76,60,.5)' : '';
+    }
+  }
+});
+
+socket.on('overtime_alert', ({ billiardId, mustLeave }) => {
+  if (billiardId !== myBilliardId) return;
+  myStatus = mustLeave ? 'overtime_warn' : 'overtime_ok';
+  initAudio(); playAlert(); vibrate([500, 200, 500, 200, 500]);
+  sendNotif('⏰ 1 heure écoulée', mustLeave ? 'Des clients attendent. Merci de libérer la table.' : 'Personne n\'attend. Vous pouvez continuer (supplément).', 'overtime');
+  render();
+});
+
+socket.on('no_show_client', ({ tableNum: t }) => {
+  if (t !== tableNum) return;
+  myStatus = 'no_show'; myBilliardId = null; render();
+});
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const card = document.getElementById('card');
+  const icon = document.getElementById('s-icon');
+  const title = document.getElementById('s-title');
+  const sub = document.getElementById('s-sub');
+  const hint = document.getElementById('hint');
+  const typeChoice = document.getElementById('type-choice');
+
+  card.className = 'status-card';
+  hint.textContent = '';
+  ['dyn-pos','dyn-billiard','dyn-timer','dyn-supplement','dyn-noshow'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.remove();
+  });
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  if (supplementInterval) { clearInterval(supplementInterval); supplementInterval = null; }
+
+  typeChoice.style.display = 'none';
+
+  if (myStatus === 'idle' || myStatus === 'no_show') {
+    typeChoice.style.display = 'grid';
+    if (myStatus === 'no_show') {
+      card.classList.add('no-show');
+      icon.textContent = '❌';
+      title.textContent = 'Temps dépassé';
+      sub.textContent = 'Vous n\'étiez pas là à temps. Vous pouvez rejoindre à nouveau.';
+    } else {
+      icon.textContent = '🎱';
+      title.textContent = 'Prêt à jouer ?';
+      sub.textContent = 'Choisissez votre type de table et rejoignez la file';
+    }
+    setBtn('primary', 'Rejoindre la file', () => {
+      initAudio(); requestNotifPerm();
+      // Switch UI immédiatement — pas d'attente du broadcast serveur
+      myStatus = 'waiting';
+      myPosition = '?';
+      myEstWait = null;
+      render();
+      socket.emit('join_queue', { tableNum, preferredType });
+    });
+
+  } else if (myStatus === 'waiting') {
+    icon.textContent = '⏳';
+    title.textContent = 'En file d\'attente';
+    sub.textContent = 'Vous serez averti automatiquement';
+    card.insertAdjacentHTML('beforeend', `
+      <div id="dyn-pos" style="margin:10px 0 4px">
+        <div class="pos-num">${myPosition || '?'}</div>
+        <div class="pos-label">Votre position</div>
+        ${myEstWait > 0 ? `<div class="est-wait">≈ ${myEstWait} min d'attente estimée</div>` : '<div class="est-wait">Table bientôt disponible</div>'}
+      </div>`);
+    setBtn('danger', 'Quitter la file', () => { socket.emit('leave_queue', { tableNum }); myStatus = 'idle'; render(); });
+    hint.textContent = 'Vous pouvez fermer cette page — vous recevrez une notification.';
+
+  } else if (myStatus === 'assigned') {
+    card.classList.add('soon');
+    icon.textContent = '🔔';
+    title.textContent = 'C\'est bientôt votre tour !';
+    sub.textContent = 'Rejoignez votre table, le staff va démarrer';
+    const isFrench = myBilliardType === 'french';
+    card.insertAdjacentHTML('beforeend', `<div id="dyn-billiard" class="billiard-tag ${isFrench ? 'french' : ''}">${isFrench ? '🔵 Billard Français' : '🎱 Billard n°'+myBilliardId}</div>`);
+    setBtn('inactive', 'En attente du démarrage...');
+    hint.textContent = 'La dame vous remettra les boules et lancera le chrono.';
+
+  } else if (myStatus === 'playing') {
+    card.classList.add('your-turn');
+    icon.textContent = '✅';
+    const isFrench = myBilliardType === 'french';
+    title.innerHTML = `<span style="color:#2ecc71">Session en cours !</span>`;
+    sub.textContent = isFrench ? 'Billard Français' : `Billard n°${myBilliardId}`;
+    renderClientTimer();
+    setBtn('inactive', 'Bonne partie 🎉');
+
+  } else if (myStatus === 'overtime_warn') {
+    card.classList.add('overtime-warn');
+    icon.textContent = '⏰';
+    title.innerHTML = '<span style="color:#e74c3c">Heure écoulée</span>';
+    sub.textContent = 'Des clients attendent. Merci de libérer la table dès que possible.';
+    if (mySupplement > 0) renderSupplement();
+    setBtn('inactive', 'Finissez votre partie');
+
+  } else if (myStatus === 'overtime_ok') {
+    card.classList.add('overtime-ok');
+    icon.textContent = '⏰';
+    title.textContent = '1 heure écoulée';
+    sub.textContent = 'Personne n\'attend — vous pouvez continuer. Un supplément sera calculé au comptoir.';
+    renderSupplement();
+    setBtn('inactive', 'Continuez à jouer 🎱');
+  }
+}
+
+function renderClientTimer() {
+  const secs = mySessionSecsLeft || 3600;
+  const pct = Math.min(100, (secs / 3600) * 100);
+  const fmt = s => `${Math.floor(Math.max(0,s)/60)}:${String(Math.max(0,s)%60).padStart(2,'0')}`;
+  document.getElementById('card').insertAdjacentHTML('beforeend', `
+    <div id="dyn-timer" class="timer-wrap">
+      <div class="timer-track"><div class="timer-fill" id="tfill" style="width:${pct}%"></div></div>
+      <div class="timer-label" id="tlbl">${fmt(secs)} restantes</div>
+    </div>`);
+  let s = secs;
+  timerInterval = setInterval(() => {
+    if (s <= 0) return clearInterval(timerInterval);
+    s--;
+    const p = Math.min(100, (s/3600)*100);
+    const fill = document.getElementById('tfill');
+    const lbl = document.getElementById('tlbl');
+    if (!fill) return clearInterval(timerInterval);
+    fill.style.width = p + '%';
+    fill.style.background = s < 600 ? '#e74c3c' : '#ff6b35';
+    lbl.textContent = fmt(s) + ' restantes';
+  }, 1000);
+}
+
+function renderSupplement() {
+  let sup = mySupplement;
+  const el = document.getElementById('card');
+  el.insertAdjacentHTML('beforeend', `
+    <div id="dyn-supplement" class="supplement-box">
+      <div class="supplement-amount" id="sup-amount">+${sup.toFixed(2)}€</div>
+      <div class="supplement-label">supplément (${myOvertimeMins} min à 12€/h)</div>
+    </div>`);
+  supplementInterval = setInterval(() => {
+    myOvertimeMins++;
+    sup = Math.round((myOvertimeMins / 60) * 12 * 100) / 100;
+    const a = document.getElementById('sup-amount');
+    if (a) a.textContent = `+${sup.toFixed(2)}€`;
+    else clearInterval(supplementInterval);
+  }, 60000);
+}
+
+function setBtn(type, text, onClick) {
+  const btn = document.getElementById('btn');
+  btn.className = 'btn-main ' + type;
+  btn.disabled = type === 'inactive';
+  btn.textContent = text;
+  btn.onclick = onClick || null;
+}
+
+function showNotifBar(msg) {
+  const el = document.getElementById('notif-bar');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+requestNotifPerm();
+</script>
+</body>
+</html>
